@@ -1,15 +1,14 @@
-
 package ruangtugas;
 
 import java.awt.*;
 import javax.swing.*;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.time.LocalDate;
+
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
 public class RuangTugas extends JFrame {
 
@@ -42,6 +41,7 @@ public class RuangTugas extends JFrame {
         JPanel sidebar = new JPanel(
             new GridLayout(5, 1, 5, 5)
         );
+
         sidebar.setPreferredSize(new Dimension(190, 0));
         sidebar.setBackground(new Color(45, 48, 75));
         sidebar.setBorder(
@@ -93,18 +93,20 @@ public class RuangTugas extends JFrame {
             cardLayout.show(contentPanel, "tentang")
         );
 
-        // Muat data dari database saat aplikasi dibuka
+        // Muat data dari database
         muatTugas();
     }
 
     // Membuat tombol sidebar
     private JButton buatTombol(String teks) {
         JButton tombol = new JButton(teks);
+
         tombol.setFocusPainted(false);
         tombol.setHorizontalAlignment(SwingConstants.LEFT);
         tombol.setBackground(new Color(65, 69, 102));
         tombol.setForeground(Color.WHITE);
         tombol.setFont(new Font("Arial", Font.PLAIN, 14));
+
         return tombol;
     }
 
@@ -113,6 +115,7 @@ public class RuangTugas extends JFrame {
         JPanel panel = new JPanel(
             new BorderLayout(15, 15)
         );
+
         panel.setBorder(
             BorderFactory.createEmptyBorder(30, 30, 30, 30)
         );
@@ -125,9 +128,11 @@ public class RuangTugas extends JFrame {
             + "Kelola tugas kuliah dan deadline kamu "
             + "dalam satu tempat.</html>"
         );
+
         deskripsi.setFont(new Font("Arial", Font.PLAIN, 17));
 
         JButton tombol = new JButton("Lihat Daftar Tugas");
+
         tombol.addActionListener(e -> {
             muatTugas();
             cardLayout.show(contentPanel, "daftar");
@@ -136,11 +141,13 @@ public class RuangTugas extends JFrame {
         JPanel isi = new JPanel(
             new GridLayout(3, 1, 10, 10)
         );
+
         isi.add(judul);
         isi.add(deskripsi);
         isi.add(tombol);
 
         panel.add(isi, BorderLayout.NORTH);
+
         return panel;
     }
 
@@ -149,6 +156,7 @@ public class RuangTugas extends JFrame {
         JPanel panel = new JPanel(
             new BorderLayout(10, 10)
         );
+
         panel.setBorder(
             BorderFactory.createEmptyBorder(30, 30, 30, 30)
         );
@@ -187,10 +195,12 @@ public class RuangTugas extends JFrame {
         });
 
         panel.add(judul, BorderLayout.NORTH);
+
         panel.add(
             new JScrollPane(taskList),
             BorderLayout.CENTER
         );
+
         panel.add(tombolHapus, BorderLayout.SOUTH);
 
         return panel;
@@ -201,6 +211,7 @@ public class RuangTugas extends JFrame {
         JPanel panel = new JPanel(
             new BorderLayout(15, 15)
         );
+
         panel.setBorder(
             BorderFactory.createEmptyBorder(30, 30, 30, 30)
         );
@@ -215,9 +226,10 @@ public class RuangTugas extends JFrame {
         namaField = new JTextField();
         matkulField = new JTextField();
 
-        // Dropdown tanggal, bulan, dan tahun
+        // Dropdown tanggal
         tanggalBox = new JComboBox<String>();
 
+        // Dropdown bulan
         bulanBox = new JComboBox<String>(
             new String[] {
                 "Januari", "Februari", "Maret",
@@ -227,6 +239,7 @@ public class RuangTugas extends JFrame {
             }
         );
 
+        // Dropdown tahun
         tahunBox = new JComboBox<String>();
 
         for (int tahun = 2026; tahun <= 2035; tahun++) {
@@ -249,6 +262,7 @@ public class RuangTugas extends JFrame {
 
         perbaruiTanggal();
 
+        // Dropdown status
         statusBox = new JComboBox<String>(
             new String[] {
                 "Belum Dikerjakan",
@@ -275,8 +289,9 @@ public class RuangTugas extends JFrame {
         form.add(tombolSimpan);
         form.add(tombolBatal);
 
-        // Simpan tugas ke database
+        // Simpan tugas menggunakan Hibernate
         tombolSimpan.addActionListener(e -> {
+
             String nama = namaField.getText().trim();
             String matkul = matkulField.getText().trim();
 
@@ -297,10 +312,12 @@ public class RuangTugas extends JFrame {
             if (tanggalTerpilih == null
                     || tahunTerpilih == null
                     || bulanBox.getSelectedIndex() < 0) {
+
                 JOptionPane.showMessageDialog(
                     this,
                     "Pilih deadline terlebih dahulu."
                 );
+
                 return;
             }
 
@@ -308,29 +325,37 @@ public class RuangTugas extends JFrame {
             int bulan = bulanBox.getSelectedIndex() + 1;
             int tahun = Integer.parseInt(tahunTerpilih);
 
-            String deadline = String.format(
-                "%04d-%02d-%02d",
-                tahun, bulan, tanggal
-            );
+            LocalDate deadline;
+
+            try {
+                deadline = LocalDate.of(
+                    tahun, bulan, tanggal
+                );
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Tanggal deadline tidak valid."
+                );
+                return;
+            }
 
             String status =
                 (String) statusBox.getSelectedItem();
 
-            String sql = "INSERT INTO tugas "
-                + "(nama_tugas, mata_kuliah, deadline, status) "
-                + "VALUES (?, ?, ?, ?)";
+            Tugas tugas = new Tugas(
+                nama, matkul, deadline, status
+            );
 
-            try (Connection conn = Koneksi.getConnection();
-                 PreparedStatement ps =
-                     conn.prepareStatement(sql)) {
-                ps.setString(1, nama);
-                ps.setString(2, matkul);
-                ps.setDate(
-                    3,
-                    java.sql.Date.valueOf(deadline)
-                );
-                ps.setString(4, status);
-                ps.executeUpdate();
+            Transaction transaction = null;
+
+            try (Session session =
+                    HibernateUtil.getSessionFactory().openSession()) {
+
+                transaction = session.beginTransaction();
+
+                session.persist(tugas);
+
+                transaction.commit();
 
                 JOptionPane.showMessageDialog(
                     this,
@@ -342,12 +367,19 @@ public class RuangTugas extends JFrame {
                 statusBox.setSelectedIndex(0);
 
                 muatTugas();
+
                 cardLayout.show(contentPanel, "daftar");
 
-            } catch (SQLException ex) {
+            } catch (Exception ex) {
+
+                if (transaction != null
+                        && transaction.isActive()) {
+                    transaction.rollback();
+                }
+
                 JOptionPane.showMessageDialog(
                     this,
-                    "Gagal menyimpan tugas: "
+                    "Gagal menyimpan tugas:\n"
                     + ex.getMessage()
                 );
             }
@@ -363,36 +395,35 @@ public class RuangTugas extends JFrame {
         return panel;
     }
 
-    // Memuat daftar tugas dari database
+    // Memuat daftar tugas menggunakan Hibernate
     private void muatTugas() {
-        String sql = "SELECT id, nama_tugas, mata_kuliah, "
-            + "deadline, status FROM tugas ORDER BY id DESC";
 
-        try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps =
-                 conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Session session =
+                HibernateUtil.getSessionFactory().openSession()) {
 
             taskModel.clear();
             taskIds.clear();
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String nama = rs.getString("nama_tugas");
-                String matkul = rs.getString("mata_kuliah");
-                String deadline = rs.getString("deadline");
-                String status = rs.getString("status");
+            java.util.List<Tugas> daftarTugas =
+                session.createQuery(
+                    "FROM Tugas t ORDER BY t.id DESC",
+                    Tugas.class
+                ).getResultList();
 
-                taskIds.add(id);
+            for (Tugas tugas : daftarTugas) {
+
+                taskIds.add(tugas.getId());
 
                 taskModel.addElement(
-                    nama + " | " + matkul
-                    + " | Deadline: " + deadline
-                    + " | " + status
+                    tugas.getNamaTugas()
+                    + " | " + tugas.getMataKuliah()
+                    + " | Deadline: " + tugas.getDeadline()
+                    + " | " + tugas.getStatus()
                 );
             }
 
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
+
             JOptionPane.showMessageDialog(
                 this,
                 "Gagal memuat tugas dari database:\n"
@@ -401,24 +432,33 @@ public class RuangTugas extends JFrame {
         }
     }
 
-    // Menghapus tugas dari database
+    // Menghapus tugas menggunakan Hibernate
     private void hapusTugas(int id) {
-        String sql = "DELETE FROM tugas WHERE id = ?";
 
-        try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps =
-                 conn.prepareStatement(sql)) {
+        Transaction transaction = null;
 
-            ps.setInt(1, id);
+        try (Session session =
+                HibernateUtil.getSessionFactory().openSession()) {
 
-            int hasil = ps.executeUpdate();
+            transaction = session.beginTransaction();
 
-            if (hasil > 0) {
+            Tugas tugas = session.get(Tugas.class, id);
+
+            if (tugas != null) {
+
+                session.remove(tugas);
+
+                transaction.commit();
+
                 JOptionPane.showMessageDialog(
                     this,
                     "Tugas berhasil dihapus."
                 );
+
             } else {
+
+                transaction.commit();
+
                 JOptionPane.showMessageDialog(
                     this,
                     "Data tugas tidak ditemukan."
@@ -427,7 +467,13 @@ public class RuangTugas extends JFrame {
 
             muatTugas();
 
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
+
+            if (transaction != null
+                    && transaction.isActive()) {
+                transaction.rollback();
+            }
+
             JOptionPane.showMessageDialog(
                 this,
                 "Gagal menghapus tugas:\n"
@@ -438,6 +484,7 @@ public class RuangTugas extends JFrame {
 
     // Mengatur jumlah hari sesuai bulan dan tahun
     private void perbaruiTanggal() {
+
         if (bulanBox == null || tahunBox == null
                 || tanggalBox == null) {
             return;
@@ -484,7 +531,9 @@ public class RuangTugas extends JFrame {
 
     // Halaman Tentang
     private JPanel halamanTentang() {
+
         JPanel panel = new JPanel(new BorderLayout());
+
         panel.setBorder(
             BorderFactory.createEmptyBorder(30, 30, 30, 30)
         );
@@ -495,18 +544,35 @@ public class RuangTugas extends JFrame {
             + "mengelola tugas kuliah.</p>"
             + "<p>Fitur: daftar tugas, tambah tugas, "
             + "dan pengelolaan status.</p>"
-            + "<p>Dibuat menggunakan Java Swing "
-            + "dan MySQL.</p></html>"
+            + "<p>Dibuat menggunakan Java Swing, "
+            + "Hibernate, dan MySQL.</p></html>"
         );
 
         panel.add(isi, BorderLayout.NORTH);
+
         return panel;
     }
 
     // Titik awal program
     public static void main(String[] args) {
+
         SwingUtilities.invokeLater(() -> {
-            new RuangTugas().setVisible(true);
+
+            try {
+                new RuangTugas().setVisible(true);
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Aplikasi gagal dijalankan:\n"
+                    + ex.getMessage()
+                );
+
+                ex.printStackTrace();
+
+                HibernateUtil.shutdown();
+            }
         });
     }
 }
