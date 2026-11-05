@@ -323,7 +323,6 @@ public class RuangTugas extends JFrame {
             try (Connection conn = Koneksi.getConnection();
                  PreparedStatement ps =
                      conn.prepareStatement(sql)) {
-
                 ps.setString(1, nama);
                 ps.setString(2, matkul);
                 ps.setDate(
@@ -331,7 +330,6 @@ public class RuangTugas extends JFrame {
                     java.sql.Date.valueOf(deadline)
                 );
                 ps.setString(4, status);
-
                 ps.executeUpdate();
 
                 JOptionPane.showMessageDialog(
