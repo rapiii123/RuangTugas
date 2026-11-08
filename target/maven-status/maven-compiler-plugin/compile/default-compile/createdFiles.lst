@@ -1,4 +1,6 @@
-ruangtugas\Tugas.class
-ruangtugas\Koneksi.class
 ruangtugas\RuangTugas.class
 ruangtugas\HibernateUtil.class
+ruangtugas\Tugas.class
+ruangtugas\RuangTugas$TugasRenderer.class
+ruangtugas\Koneksi.class
+ruangtugas\RuangTugas$1.class
