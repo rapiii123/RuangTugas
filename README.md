@@ -1,4 +1,4 @@
-# 🚀 RuangTugas - Student Task Management
+# 📝 RuangTugas - Student Task Management
 
 **RuangTugas** is a desktop-based application designed to help university students manage academic assignments, monitor deadlines, and organize task progress in one integrated platform.
 
@@ -56,7 +56,7 @@ Before running the application, make sure the following tools are installed:
 - MySQL Server or XAMPP
 - Visual Studio Code or NetBeans IDE
 
-## 🚀 Installation & Setup
+## 🛠️ Installation & Setup
 
 **1. Clone the repository**
 
