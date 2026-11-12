@@ -1,6 +1,9 @@
+ruangtugas\config\SpringConfig.class
+ruangtugas\RuangTugas$2.class
 ruangtugas\RuangTugas.class
 ruangtugas\HibernateUtil.class
 ruangtugas\Tugas.class
 ruangtugas\RuangTugas$TugasRenderer.class
 ruangtugas\Koneksi.class
 ruangtugas\RuangTugas$1.class
+ruangtugas\TugasService.class
